@@ -1,0 +1,12 @@
+svault
+dist/
+*.bak
+.worktrees/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+claude.md
+VaultCLI.prd.md

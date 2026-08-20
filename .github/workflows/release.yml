@@ -1,0 +1,44 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.25'
+          cache: true
+
+      - name: Run tests
+        run: go test ./...
+
+      - name: Install nfpm
+        run: go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
+
+      - name: Build binaries and .deb/.rpm packages
+        run: make deb rpm
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: |
+            dist/svault-linux-amd64
+            dist/svault-linux-arm64
+            dist/svault-darwin-amd64
+            dist/svault-darwin-arm64
+            dist/svault-windows-amd64.exe
+            dist/*.deb
+            dist/*.rpm
+            dist/checksums.txt

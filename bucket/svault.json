@@ -1,0 +1,28 @@
+{
+    "version": "1.0.0",
+    "description": "Local encrypted secret vault for developers",
+    "homepage": "https://github.com/dafagareth/svault",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/dafagareth/svault/releases/download/v1.0.0/svault-windows-amd64.exe",
+            "hash": "321de9289bfa826deb0097214f987a3fb0be148145fb5543ecab910b2a182645",
+            "bin": [
+                [
+                    "svault-windows-amd64.exe",
+                    "svault"
+                ]
+            ]
+        }
+    },
+    "checkver": {
+        "github": "https://github.com/dafagareth/svault"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/dafagareth/svault/releases/download/v$version/svault-windows-amd64.exe"
+            }
+        }
+    }
+}

@@ -1,0 +1,31 @@
+# nfpm configuration for building .deb and .rpm packages of svault.
+# See https://nfpm.goreleaser.com
+#
+# nfpm expands ${ARCH} and ${VERSION} below from the environment, but it does
+# NOT expand env vars inside contents.src. The Makefile therefore stages the
+# right per-arch binary at ./dist/svault.pkgbin before each run:
+#   cp dist/svault-linux-amd64 dist/svault.pkgbin
+#   VERSION=2.0.0 ARCH=amd64 nfpm package -f packaging/nfpm.yaml -p deb -t dist/
+#
+# The Makefile `deb`/`rpm` targets do this for you.
+
+name: svault
+arch: ${ARCH}
+platform: linux
+version: ${VERSION}
+section: utils
+priority: optional
+maintainer: Dafa Gareth <dafagareth@gmail.com>
+description: |
+  Local encrypted secret vault for developers.
+  Stores secrets in a single AES-256-GCM encrypted file with Argon2id key
+  derivation. Single binary, no server, no dependencies.
+vendor: Dafa Gareth
+homepage: https://github.com/dafagareth/svault
+license: MIT
+
+contents:
+  - src: ./dist/svault.pkgbin
+    dst: /usr/bin/svault
+    file_info:
+      mode: 0755
