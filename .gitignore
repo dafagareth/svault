@@ -1,12 +1,9 @@
+# Binary builds and release artifacts
 svault
+svault.exe
 dist/
+
+# Local vault files
+*.enc
 *.bak
-.worktrees/
-
-# Environment files
-.env
-.env.*
-!.env.example
-
-claude.md
-VaultCLI.prd.md
+*.log

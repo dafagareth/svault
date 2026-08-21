@@ -1,5 +1,3 @@
-# Copyright 2026 Dafa. MIT License.
-#
 # Install script for svault, the local encrypted secret vault, on Windows.
 #
 #   irm https://raw.githubusercontent.com/dafagareth/svault/main/install.ps1 | iex

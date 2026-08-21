@@ -1,26 +1,3 @@
-// Copyright 2026 Dafa
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
-
-// Package envfile parses .env-style files: KEY=VALUE pairs, one per line, with
-// support for comments and blank lines. It is shared by the import and check
-// commands so the two stay in sync on what a valid line looks like.
 package envfile
 
 import (
@@ -31,17 +8,11 @@ import (
 	"strings"
 )
 
-// Entry is a single parsed KEY=VALUE pair, in file order.
 type Entry struct {
 	Key   string
 	Value string
 }
 
-// Parse reads an .env-style file and returns its entries in file order. It
-// skips blank lines and lines beginning with '#', splits each remaining line on
-// the first '=', trims surrounding whitespace from both sides, and strips a
-// single layer of matching surrounding quotes from the value. Lines without a
-// '=' or with an empty key are skipped.
 func Parse(path string) ([]Entry, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -56,6 +27,9 @@ func Parse(path string) ([]Entry, error) {
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
+		if strings.HasPrefix(line, "export ") {
+			line = strings.TrimSpace(strings.TrimPrefix(line, "export "))
+		}
 		idx := strings.IndexByte(line, '=')
 		if idx < 1 {
 			continue
@@ -64,8 +38,8 @@ func Parse(path string) ([]Entry, error) {
 		if key == "" {
 			continue
 		}
-		value := strings.TrimSpace(line[idx+1:])
-		value = stripQuotes(value)
+		valueRaw := strings.TrimSpace(line[idx+1:])
+		value := parseValue(valueRaw)
 		entries = append(entries, Entry{Key: key, Value: value})
 	}
 	if err := scanner.Err(); err != nil {
@@ -74,7 +48,32 @@ func Parse(path string) ([]Entry, error) {
 	return entries, nil
 }
 
-// Keys returns the sorted, de-duplicated key names from an .env-style file.
+func parseValue(v string) string {
+	if len(v) == 0 {
+		return ""
+	}
+	if v[0] == '"' || v[0] == '\'' {
+		quote := v[0]
+		endIdx := -1
+		for i := 1; i < len(v); i++ {
+			if v[i] == quote && v[i-1] != '\\' {
+				endIdx = i
+				break
+			}
+		}
+		if endIdx > 0 {
+			res := v[1:endIdx]
+			res = strings.ReplaceAll(res, "\\\"", "\"")
+			res = strings.ReplaceAll(res, "\\'", "'")
+			return res
+		}
+	}
+	if hashIdx := strings.IndexByte(v, '#'); hashIdx >= 0 {
+		v = strings.TrimSpace(v[:hashIdx])
+	}
+	return v
+}
+
 func Keys(path string) ([]string, error) {
 	entries, err := Parse(path)
 	if err != nil {
@@ -91,15 +90,4 @@ func Keys(path string) ([]string, error) {
 	}
 	sort.Strings(keys)
 	return keys, nil
-}
-
-// stripQuotes removes a single pair of matching surrounding quotes, if present.
-func stripQuotes(v string) string {
-	if len(v) >= 2 {
-		first, last := v[0], v[len(v)-1]
-		if (first == '"' && last == '"') || (first == '\'' && last == '\'') {
-			return v[1 : len(v)-1]
-		}
-	}
-	return v
 }

@@ -1,4 +1,4 @@
-# Maintainer: Dafa <dafagareth@gmail.com>
+# Maintainer: dafagareth <dafagareth@gmail.com>
 
 # Source build of svault from a tagged release. This is the preferred AUR
 # package: it compiles on the user's machine and does not trust a prebuilt
@@ -7,6 +7,7 @@
 
 pkgname=svault
 pkgver=1.0.0
+epoch=1
 pkgrel=1
 pkgdesc="Local encrypted secret vault for developers"
 arch=('x86_64' 'aarch64')

@@ -1,4 +1,4 @@
-# Maintainer: Dafa <dafagareth@gmail.com>
+# Maintainer: dafagareth <dafagareth@gmail.com>
 
 # Prebuilt-binary package of svault. Installs the release binary directly without
 # a Go toolchain. The sha256sums below MUST match the files in the release's
@@ -6,6 +6,7 @@
 
 pkgname=svault-bin
 pkgver=1.0.0
+epoch=1
 pkgrel=1
 pkgdesc="Local encrypted secret vault for developers (prebuilt binary)"
 arch=('x86_64' 'aarch64')

@@ -1,50 +1,47 @@
-# Security
+# Security Policy and Cryptographic Architecture
 
-This document describes how `svault` protects your secrets, the trade-offs it makes, and how to report a vulnerability.
+This document specifies the cryptographic design, security guarantees, operational trade-offs, and vulnerability reporting procedures for `svault`.
 
-## Cryptography
+## Cryptographic Design
 
-- **Encryption**: AES-256-GCM, an authenticated cipher. Any tampering with the vault file is detected on decryption.
-- **Key derivation**: Argon2id, the recommended algorithm for password-based key derivation. Each vault uses a fresh random 16 byte salt.
-- **Randomness**: all salts, nonces, and generated passwords use `crypto/rand`. The package never uses `math/rand` for anything security related.
+`svault` employs authenticated symmetric encryption with AES-256-GCM. Decryption operations verify authentication tags, detecting any data corruption or tampering.
 
-The `vault.enc` file layout is:
+Key derivation uses Argon2id with a 16-byte random salt generated per vault initialization.
 
-```
-[ 16 bytes salt ][ 12 bytes nonce ][ ciphertext ]
-```
+Cryptographic randomness, nonces, and password generation rely exclusively on system entropy via `crypto/rand`.
 
-The salt is stored in the clear, which is standard practice. It is not secret; its purpose is to make precomputed attacks against the password infeasible.
+Encrypted storage payload structure:
+`[ 16-byte Salt ][ 12-byte Nonce ][ Ciphertext + Auth Tag ]`
 
-## Guarantees
+The salt is stored unencrypted at the header of the vault payload to prevent precomputed rainbow table attacks.
 
-- **The master password cannot be recovered.** If you forget it, there is no way into the vault. This is by design. Keep a backup of your password somewhere safe.
-- Secret values are **never** written to logs, temp files, or any output other than `svault get`, `svault copy`, `svault env`, and `svault export`.
-- Every write to the vault first creates a `vault.enc.bak` backup plus several timestamped rollback copies, so a bad write cannot destroy an earlier good copy.
-- Concurrent svault processes serialize on an exclusive file lock, so two writes can never clobber each other and silently lose a secret.
-- The session token file is created with mode `0600`, readable only by the owning user.
-- Secret keys are validated to be valid shell variable names, so `svault export` and `svault env` output is always safe to eval.
+## Security Guarantees
 
-## Known trade-off: session key in /tmp
+Master password recovery is impossible by design. Forgetting the master password results in permanent loss of access to vault data.
 
-When the vault is unlocked, the derived key is stored as plaintext in `/tmp/.svault_session` with permission `0600`. This is a deliberate trade-off between convenience (not retyping the password constantly) and security.
+Secret values are omitted from audit logs, temporary files, and debug outputs. Values are exposed only when executing `get`, `copy`, `env`, or `export` commands.
 
-Implications:
+Key names in audit logs are masked using a SHA-256 hash prefix (`id:xxxxxxxx`) so that plaintext key names never appear in `vault.log`.
 
-- Other users on the same system cannot read this file, since it is protected by `0600` permissions.
-- **Root, or any process with root-equivalent privileges, can read this file.**
-- The file is deleted automatically after the TTL (default 30 minutes) or when `svault lock` runs.
+Vault modifications perform write operations through exclusive file locks, preventing race conditions between concurrent processes.
 
-If you work on a shared server or an environment where others have root access, run `svault lock` as soon as you finish using the vault rather than relying on the TTL to expire.
+All write operations (vault, session, config) use atomic file replacement (`CreateTemp`, `Sync`, `Rename`) to prevent partial writes from corrupting stored data on power loss or process interruption.
 
-## Reporting a vulnerability
+Automatic rollback backups are generated prior to vault modifications to protect against data corruption.
 
-If you find a security issue, do not open a public GitHub issue.
+Key names are restricted to valid POSIX environment variable names, ensuring environment export operations remain safe for shell evaluation.
 
-Instead, email **dafagareth@gmail.com** with:
+## Operational Trade-offs
 
-- A description of the issue
-- Steps to reproduce
-- The potential impact
+When unlocked, the derived encryption key is cached at `~/.svault/.session` with permissions `0600` (user-readable only). The directory `~/.svault/` is created with permissions `0700`.
 
-You can expect an acknowledgement within a few days.
+Implications of session caching:
+- Permissions restrict access to the owning user only.
+- Processes with root privileges can access any file on the system.
+- Session files automatically expire after the configured TTL (default 30 minutes, configurable via `SVAULT_SESSION_TTL` environment variable) or upon executing `svault lock`.
+
+Users operating in shared or multi-tenant environments with administrative access should execute `svault lock` immediately after completing work.
+
+## Vulnerability Disclosure Protocol
+
+Report security vulnerabilities via email to `dafagareth@gmail.com`. Include a technical description of the vulnerability, reproduction steps, and potential impact. Do not submit public GitHub issues for security vulnerabilities.

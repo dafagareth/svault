@@ -15,12 +15,12 @@ platform: linux
 version: ${VERSION}
 section: utils
 priority: optional
-maintainer: Dafa Gareth <dafagareth@gmail.com>
+maintainer: dafagareth <dafagareth@gmail.com>
 description: |
   Local encrypted secret vault for developers.
   Stores secrets in a single AES-256-GCM encrypted file with Argon2id key
   derivation. Single binary, no server, no dependencies.
-vendor: Dafa Gareth
+vendor: dafagareth
 homepage: https://github.com/dafagareth/svault
 license: MIT
 

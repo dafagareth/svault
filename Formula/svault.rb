@@ -18,7 +18,7 @@
 class Svault < Formula
   desc "Local encrypted secret vault for developers"
   homepage "https://github.com/dafagareth/svault"
-  version "2.2.1"
+  version "1.0.0"
   license "MIT"
 
   on_macos do

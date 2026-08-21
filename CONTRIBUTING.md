@@ -1,102 +1,81 @@
-# Contributing to svault
+# Contributing Guidelines
 
-Thank you for your interest in contributing to `svault`! We welcome contributions, bug reports, feature requests, and documentation improvements.
+This document outlines development procedures, code standards, and verification steps for contributing to `svault`.
 
----
+## Code of Conduct
 
-## 📜 Code of Conduct
+Contributors must adhere to the standards described in [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
-All contributors and maintainers are expected to adhere to our [Code of Conduct](CODE_OF_CONDUCT.md). Please report unacceptable behavior in accordance with the guidelines described therein.
+## Development Setup
 
----
+Requirements:
+- Go version 1.25 or higher
+- Standard Make utility
+- Git
 
-## 🛠️ Development Setup
+Clone the repository and verify the test suite:
+```bash
+git clone https://github.com/dafagareth/svault.git
+cd svault
+go test ./...
+```
 
-### Prerequisites
-- **Go**: Version 1.25 or higher
-- **Make**: Standard build execution tool
-- **Git**
+## Development Workflow
 
-### Getting Started
-1. **Fork and Clone the Repository:**
+1. Create a feature branch from `main`:
    ```bash
-   git clone https://github.com/YOUR-USERNAME/svault.git
-   cd svault
+   git checkout -b feat/feature-name
    ```
-
-2. **Install Dependencies:**
+2. Implement code modifications along with corresponding unit tests.
+3. Run all verification checks using the development script:
    ```bash
-   go mod tidy
+   ./dev.sh check
    ```
-
-3. **Verify Development Setup:**
+   This runs `gofmt`, `go vet`, and `go test -race ./...` in sequence. All three must pass before opening a Pull Request.
+4. Optionally, synchronize Go module dependencies:
    ```bash
-   go test ./...
+   ./dev.sh tidy
    ```
+5. Commit changes adhering to the [Conventional Commits](https://www.conventionalcommits.org/) specification.
+6. Push the feature branch and open a Pull Request against `main`.
 
----
+## Commit Specification
 
-## 🔄 Development Workflow
+Commit messages must follow the [Conventional Commits](https://www.conventionalcommits.org/) format: `<type>(<scope>): <description>`.
 
-1. Create a logical feature branch from `main`:
-   ```bash
-   git checkout -b feat/your-feature-name
-   ```
-2. Implement your changes alongside corresponding unit tests.
-3. Run local code verification checks:
-   ```bash
-   make test       # Run complete unit test suite
-   make vet        # Run static analysis check
-   ```
-4. Verify race detector compliance:
-   ```bash
-   go test -race ./...
-   ```
-5. Commit your changes adhering to conventional commit specifications.
-6. Push your feature branch to your fork and open a Pull Request against `main`.
-
----
-
-## 📝 Commit Conventions
-
-We enforce the [Conventional Commits specification](https://www.conventionalcommits.org/). Commit messages must follow the `<type>(<scope>): <description>` format.
-
-**Examples:**
-- `feat(cmd): add rotate command to re-encrypt vault payload`
-- `fix(storage): resolve race condition on concurrent session writes`
-- `docs(readme): update namespace resolution order documentation`
+Examples:
+- `feat(secrets): add batch secret retrieval support to get command`
+- `fix(storage): resolve concurrent file lock race condition`
+- `docs(readme): update namespace resolution hierarchy section`
 - `test(crypto): add edge case validation for empty nonces`
+- `chore(deps): update golang.org/x/crypto module dependency`
 
----
+## Code and Architectural Standards
 
-## 📐 Code & Style Guidelines
+Write code, comments, and documentation strictly in clear English.
 
-- **Language**: Write all code, comments, documentation, and user-facing messages strictly in clear, concise English.
-- **Error Handling**: Pass errors explicitly up the execution stack. Avoid using `panic` in core package libraries or CLI commands.
-- **Error Formatting**: Error strings must be formatted in lowercase without trailing punctuation (e.g., `fmt.Errorf("failed to load session: %w", err)`).
-- **Cryptographic Security**: Use `crypto/rand` exclusively for security and cryptographic primitives. Never use `math/rand`.
-- **Code Cleanliness**: Omit redundant comments that simply restate function signatures or variable identifiers.
+Propagate errors explicitly up the call stack. Do not invoke `panic` in package libraries or CLI commands.
 
----
+Format error strings in lowercase without trailing punctuation, for example: `fmt.Errorf("failed to load session: %w", err)`.
 
-## 🧪 Testing Standards
+Use `crypto/rand` exclusively for security and cryptographic primitives. Do not use `math/rand`.
 
-- **Test Coverage**: Every package and CLI subcommand under `cmd/` must maintain accompanying `_test.go` test suites.
-- **Environment Isolation**: Always utilize `t.TempDir()` and `t.Setenv()` to isolate filesystem targets and environment variables during test execution.
-- **Environment Safety**: Unit tests **must never** modify the real host system environment (`~/.svault`) or system clipboards.
-- **Testing Helpers**: Utilize the `setupVault` helper in [`cmd/helpers_test.go`](cmd/helpers_test.go) to construct isolated test vault fixtures.
+All file writes to vault, session, and config must use atomic replacement (`os.CreateTemp`, `Sync`, `Close`, `os.Rename`). Do not use `os.WriteFile` directly for files that must remain consistent on crash.
 
----
+Avoid redundant comments that restate function signatures or variable names.
 
-## 🐛 Bug Reports & Feature Requests
+## Testing Standards
 
-Submit bug reports and feature requests via the [GitHub Issue Tracker](https://github.com/dafagareth/svault/issues).
+Packages and CLI subcommands must maintain associated unit tests in `_test.go` files.
 
-When reporting a bug, please include:
-- Operating System and System Architecture
-- Go version (`go version`)
-- Exact command invocation and flags executed
-- Complete error log output and steps to reproduce
+Use `t.TempDir()` and `t.Setenv()` to isolate filesystem interactions and environment variables during testing.
 
-> [!IMPORTANT]
-> **Security Vulnerabilities:** Do **NOT** open public GitHub issues for security vulnerabilities. Please follow the disclosure protocol outlined in [SECURITY.md](SECURITY.md).
+Tests must not mutate host configuration directories (`~/.svault`) or the system clipboard.
+
+Use the `SetupVault` helper in `cmd/common/test_helpers.go` to construct isolated test vault fixtures.
+
+## Reporting Issues and Vulnerabilities
+
+Submit functional bugs and feature requests via the GitHub Issue Tracker. Include system architecture, Go version, exact command arguments, and reproduction steps.
+
+Security vulnerabilities must not be reported via public GitHub issues. Follow the disclosure protocol defined in [SECURITY.md](SECURITY.md).
